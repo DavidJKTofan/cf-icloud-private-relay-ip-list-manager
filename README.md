@@ -1,11 +1,12 @@
 # iCloud Private Relay IP List Manager
 
-This Cloudflare Worker periodically fetches lists from the [iCloud Private Relay egress IP addresses](https://github.com/hroost/icloud-private-relay-iplist), validates the IP addresses and CIDR ranges, and updates an [IP list](https://developers.cloudflare.com/waf/tools/lists/custom-lists/#lists-with-ip-addresses-ip-lists) called `icloud_private_relay_egress_ips` on your Cloudflare account.
+This Cloudflare Worker `icloud-private-relay-ip-list-manager` periodically fetches lists from the [iCloud Private Relay egress IP addresses](https://github.com/hroost/icloud-private-relay-iplist) and updates an [IP list](https://developers.cloudflare.com/waf/tools/lists/custom-lists/#lists-with-ip-addresses-ip-lists) called `icloud_private_relay_egress_ips` on your Cloudflare account.
+
+Individual IP addresses and CIDR ranges must be from `/8` to `/32` for IPv4 and from `/12` to `/64` for IPv6.
 
 ## Features
 
-- **Fetches** IPv4 addresses from a remote source.
-- **Validates** individual IPv4 addresses and CIDR ranges (from `/8` to `/32`).
+- **Fetches** IPv4 and IPv6 addresses from a remote source.
 - **Creates or updates** a Cloudflare IP List using Cloudflare's API.
 - **Handles cron jobs** to fetch and update the list every 14 days (bi-weekly).
 
@@ -38,7 +39,7 @@ For more information on managing API Tokens in Cloudflare, refer to the [Cloudfl
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/DavidJKTofa/icloud-private-relay-ip-list-manager.git
+   git clone https://github.com/DavidJKTofan/icloud-private-relay-ip-list-manager.git
    cd icloud-private-relay-ip-list-manager
    ```
 
@@ -53,9 +54,12 @@ For more information on managing API Tokens in Cloudflare, refer to the [Cloudfl
    - `ACCOUNT_ID`: Your Cloudflare account ID.
    - `API_TOKEN`: The API token with appropriate permissions.
    - `LIST_NAME`: The name of the Cloudflare IP list.
-   - `IP_LIST_SOURCE_URL`: The URL from which to fetch the IPs.
+   - `IPV4_LIST_SOURCE_URL`: The URL from which to fetch the IPv4s.
+   - `IPV6_LIST_SOURCE_URL`: The URL from which to fetch the IPv6s.
 
 > For security purposes, it's best to store sensitive variables (such as your API token) using [Wrangler Secrets](https://developers.cloudflare.com/workers/configuration/secrets/).
+
+> Note that you have a [soft-limit](https://developers.cloudflare.com/waf/tools/lists/#availability) of 10,000 list items across all custom lists in your account.
 
 4. **Deploy the Worker:**
    ```bash

@@ -5,15 +5,19 @@ async function handleGetRequest(request) {
 	const url = new URL(request.url);
 	if (url.pathname === '/info') {
 		return new Response(
-			JSON.stringify({
-				worker_name: 'iCloud Private Relay IP List Manager',
-				cron_trigger_info: {
-					description: 'This Worker is scheduled to run every 14 days to fetch and update an IPv4 list.',
-					cron_schedule: '0 0 */14 * *', // Every 14th day at midnight UTC
-					time_zone: 'UTC',
+			JSON.stringify(
+				{
+					worker_name: 'iCloud Private Relay IP List Manager',
+					cron_trigger_info: {
+						description: 'This Worker is scheduled to run every 14 days to fetch and update an IPv4 and IPv6 list.',
+						cron_schedule: '0 0 */14 * *', // Every 14th day at midnight UTC
+						time_zone: 'UTC',
+					},
+					status: 'Worker is running',
 				},
-				status: 'Worker is running',
-			}, null, 2),
+				null,
+				2
+			),
 			{
 				headers: { 'Content-Type': 'application/json' },
 			}
@@ -23,7 +27,8 @@ async function handleGetRequest(request) {
 	return new Response('Not Found', { status: 404 });
 }
 
-async function fetchIPv4List(sourceURL) {
+// Function to fetch the IP list (IPv4 or IPv6)
+async function fetchIPList(sourceURL) {
 	const response = await fetch(sourceURL);
 	if (!response.ok) {
 		throw new Error(`Failed to fetch IP list: ${response.status}`);
@@ -33,15 +38,7 @@ async function fetchIPv4List(sourceURL) {
 	return data;
 }
 
-function validateIPv4OrCIDR(input) {
-	// Regex for validating IPv4 addresses and CIDR notation
-	const ipv4Regex = /^(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}$/;
-	const cidrRegex =
-		/^(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}\/(8|9|[1-2][0-9]|3[0-2])$/;
-
-	return ipv4Regex.test(input) || cidrRegex.test(input);
-}
-
+// Function to get or create the Cloudflare IP list
 async function getOrCreateList(env) {
 	const listsResponse = await fetch(`${CLOUDFLARE_API_BASE}/accounts/${env.ACCOUNT_ID}/rules/lists`, {
 		method: 'GET',
@@ -71,7 +68,7 @@ async function getOrCreateList(env) {
 		body: JSON.stringify({
 			name: env.LIST_NAME,
 			kind: 'ip',
-			description: 'Managed List of iCloud Private Relay egress IP addresses created by Cloudflare Worker',
+			description: 'Managed List of iCloud Private Relay egress IP addresses (IPv4 & IPv6) created by Cloudflare Worker',
 		}),
 	});
 
@@ -84,6 +81,7 @@ async function getOrCreateList(env) {
 	return newList.id;
 }
 
+// Function to update the Cloudflare list with both IPv4 and IPv6 entries
 async function updateListItems(listId, validIPs, env) {
 	const items = validIPs.map((ip) => ({ ip }));
 
@@ -108,6 +106,7 @@ export default {
 	async fetch(request, env, ctx) {
 		// Handle normal GET requests
 		if (request.method === 'GET') {
+			console.log('GET REQUEST');
 			return handleGetRequest(request);
 		}
 
@@ -118,28 +117,30 @@ export default {
 	async scheduled(event, env, ctx) {
 		try {
 			console.log('Fetching IPv4 list from source URL...');
-			const ipv4List = await fetchIPv4List(env.IP_LIST_SOURCE_URL);
+			const ipv4List = await fetchIPList(env.IPV4_LIST_SOURCE_URL);
 
-			console.log(`Fetched ${ipv4List.length} entries. Validating IPs and CIDR ranges...`);
-			const validIPs = ipv4List.filter(validateIPv4OrCIDR);
+			console.log('Fetching IPv6 list from source URL...');
+			const ipv6List = await fetchIPList(env.IPV6_LIST_SOURCE_URL);
 
-			if (validIPs.length === 0) {
-				console.error('No valid IPs or CIDR ranges found.');
-				return;
-			}
+			// Combine both lists (IPv4 and IPv6)
+			const combinedList = [...ipv4List, ...ipv6List];
 
-			console.log(`Found ${validIPs.length} valid entries. Fetching or creating the Cloudflare Managed List...`);
+			console.log(`Fetched ${combinedList.length} entries. Proceeding to update Cloudflare Managed List...`);
+
+			// Fetch or create the Cloudflare list
 			const listId = await getOrCreateList(env);
 
-			console.log(`Updating the list with ${validIPs.length} items...`);
-			const result = await updateListItems(listId, validIPs, env);
+			// Update the list with both IPv4 and IPv6 entries
+			console.log(`Updating the list with ${combinedList.length} items...`);
+			const result = await updateListItems(listId, combinedList, env);
 
 			console.log('List updated successfully:', result);
-            console.log("Cron Trigger processed successfully!");
+			console.log('Cron Trigger processed successfully!');
+			console.log('SUCCESS');
 		} catch (error) {
-            console.log("ERROR");
+			console.log('ERROR');
 			console.error('Error during scheduled task:', error.message);
-			console.error(error.stack); // Provide full stack trace for debugging
+			console.error(error.stack); // Full stack trace for debugging
 		}
 	},
 };
