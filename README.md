@@ -4,6 +4,12 @@ This Cloudflare Worker `icloud-private-relay-ip-list-manager` periodically fetch
 
 Individual IP addresses and CIDR ranges must be from `/8` to `/32` for IPv4 and from `/12` to `/64` for IPv6.
 
+The main purpose of this project is to allow Cloudflare customers to create [WAF Custom Rules](https://developers.cloudflare.com/waf/custom-rules/) with this IP List to decide what to do with iCloud Private Relay requests.
+
+Example: 
+
+![log-icloud-private-relay-egress-ips](log-icloud-private-relay-egress-ips.png)
+
 ## Features
 
 - **Fetches** IPv4 and IPv6 addresses from a remote source.
@@ -85,7 +91,7 @@ To test the cron trigger locally:
 
 # Credits & Disclaimer
 
-This repository is designed to help Cloudflare customers easily create their own "Managed" IP List, enabling them to take control over how they handle [iCloud Private Relay](https://support.apple.com/en-us/102602) users on their websites proxied through Cloudflare.
+This repository is designed to help Cloudflare customers easily create their own "Managed" IP List, enabling them to take control over how they handle [iCloud Private Relay](https://support.apple.com/en-us/102602) requests/users on their websites proxied through Cloudflare.
 
 The project is intended for **educational purposes only** and is not endorsed or officially supported by Apple or Cloudflare.
 
