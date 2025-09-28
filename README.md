@@ -44,7 +44,7 @@ For more information on managing API Tokens in Cloudflare, refer to the [Cloudfl
 
 # Setup
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=[<your git repo URL>](https://github.com/DavidJKTofan/cf-icloud-private-relay-ip-list-manager))
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/DavidJKTofan/cf-icloud-private-relay-ip-list-manager)
 
 1. **Clone the repository:**
 
